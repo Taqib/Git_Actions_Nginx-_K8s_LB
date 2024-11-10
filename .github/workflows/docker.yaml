@@ -31,10 +31,24 @@ jobs:
           docker run -d -p 8080:80 --name test-nginx mynginx:test
           sleep 5
           curl http://localhost:8080 | grep "Hello from GitHub Actions"
-          docker stop test-nginx
+
+      # Health Check
+      - name: Health Check
+        run: |
+          curl -f http://localhost:8080 || exit 1
+
+      # Stop and Remove Test Container
+      - name: Clean up Test Container
+        run: docker stop test-nginx && docker rm test-nginx
+
+      # Tag Version
+      - name: Tag Version
+        run: |
+          docker tag mynginx:test ${{ secrets.DOCKER_USERNAME }}/mynginx:latest
+          docker tag mynginx:test ${{ secrets.DOCKER_USERNAME }}/mynginx:${{ github.sha }}
 
       # Push Image
       - name: Push to DockerHub
         run: |
-          docker tag mynginx:test ${{ secrets.DOCKER_USERNAME }}/mynginx:latest
           docker push ${{ secrets.DOCKER_USERNAME }}/mynginx:latest
+          docker push ${{ secrets.DOCKER_USERNAME }}/mynginx:${{ github.sha }}
